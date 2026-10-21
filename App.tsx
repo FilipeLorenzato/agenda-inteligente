@@ -1,8 +1,9 @@
 import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Modal, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Alert, Linking, Modal, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { FocusPill, FocusTimer } from './src/components/FocusTimer';
 import { QuickAdd } from './src/components/QuickAdd';
 import { TaskEditor } from './src/components/TaskEditor';
 import { Button, Row, Tap, Txt } from './src/components/ui';
@@ -48,6 +49,7 @@ function Main() {
   const [selected, setSelected] = useState(toKey(new Date()));
   const [editor, setEditor] = useState<{ draft: TaskDraft; id?: string } | null>(null);
   const [quick, setQuick] = useState<{ mode: 'voz' | 'texto' } | null>(null);
+  const [focus, setFocus] = useState<{ taskId?: string } | null>(null);
   const [toast, setToast] = useState('');
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -116,9 +118,60 @@ function Main() {
     return () => sub.remove();
   }, []);
 
+  // ---------- Links do widget e dos atalhos do ícone (agenda://...) ----------
+  useEffect(() => {
+    const open = (url: string | null) => {
+      if (!url) return;
+      const m = /^agenda:\/\/([^?#]*)(?:\?(.*))?/.exec(url);
+      if (!m) return;
+      const path = m[1].replace(/\/+$/, '');
+      const query = new URLSearchParams(m[2] ?? '');
+      if (path === 'nova') {
+        setEditor(null);
+        setQuick({ mode: query.get('modo') === 'texto' ? 'texto' : 'voz' });
+      } else if (path === 'proximas') {
+        setQuick(null);
+        setTab('proximas');
+      } else if (path.startsWith('tarefa/')) {
+        const task = latest.current.tasks.find((t) => t.id === path.slice('tarefa/'.length));
+        setTab('agenda');
+        if (task) {
+          setSelected(task.date);
+          latest.current.openTask(task);
+        }
+      }
+    };
+    Linking.getInitialURL().then(open).catch(() => undefined);
+    const sub = Linking.addEventListener('url', (e) => open(e.url));
+    return () => sub.remove();
+  }, []);
+
   const saveEditor = (draft: TaskDraft) => {
     if (!editor) return;
     if (editor.id) {
+      const original = tasks.find((t) => t.id === editor.id);
+      if (original?.seriesId) {
+        Alert.alert('Tarefa que se repete', 'Aplicar as mudanças só nesta ou também nas próximas?', [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Só nesta',
+            onPress: () => {
+              updateTask(editor.id as string, draft, 'esta');
+              setEditor(null);
+              notify('Tarefa atualizada ✨');
+            },
+          },
+          {
+            text: 'Nas próximas também',
+            onPress: () => {
+              updateTask(editor.id as string, draft, 'proximas');
+              setEditor(null);
+              notify('Série atualizada 🔁');
+            },
+          },
+        ]);
+        return;
+      }
       updateTask(editor.id, draft);
       notify('Tarefa atualizada ✨');
     } else {
@@ -134,10 +187,12 @@ function Main() {
       {tab === 'agenda' ? (
         <AgendaScreen selected={selected} onSelect={setSelected} onOpenTask={openTask} onNewOnDay={newOnDay} />
       ) : tab === 'proximas' ? (
-        <UpcomingScreen onOpenTask={openTask} />
+        <UpcomingScreen onOpenTask={openTask} notify={notify} />
       ) : (
-        <SettingsScreen notify={notify} />
+        <SettingsScreen notify={notify} onOpenFocus={() => setFocus({})} />
       )}
+
+      {!focus ? <FocusPill onPress={() => setFocus({ taskId: settings.activeFocus?.taskId })} /> : null}
 
       <TabBar
         tab={tab}
@@ -177,14 +232,26 @@ function Main() {
         onSave={saveEditor}
         onDelete={
           editor?.id
-            ? () => {
-                deleteTask(editor.id as string);
+            ? (scope) => {
+                deleteTask(editor.id as string, scope);
                 setEditor(null);
-                notify('Tarefa excluída 🗑️');
+                notify(scope === 'proximas' ? 'Série encerrada 🗑️' : 'Tarefa excluída 🗑️');
+              }
+            : undefined
+        }
+        onFocus={
+          editor?.id
+            ? () => {
+                const id = editor.id as string;
+                setEditor(null);
+                setFocus({ taskId: id });
               }
             : undefined
         }
       />
+
+      {/* sempre montado: o relógio do foco continua rodando com a janela fechada */}
+      <FocusTimer visible={!!focus} taskId={focus?.taskId} onClose={() => setFocus(null)} />
 
       <Onboarding
         visible={!settings.onboarded}

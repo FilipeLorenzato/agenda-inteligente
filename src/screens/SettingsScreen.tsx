@@ -11,8 +11,9 @@ import { pickTime } from '../services/pickers';
 import { useStore } from '../state/store';
 import { alpha, radius, useTheme } from '../theme';
 import type { ThemeMode } from '../types';
+import { BackupSection, CanvasTokenCard, CoursesSection, FocusSection, StudySection } from './SettingsSections';
 
-export function SettingsScreen({ notify }: { notify(msg: string): void }) {
+export function SettingsScreen({ notify, onOpenFocus }: { notify(msg: string): void; onOpenFocus(): void }) {
   const p = useTheme();
   const insets = useSafeAreaInsets();
   const { settings, updateSettings, syncNow, syncing, tasks, notificationsAllowed, askNotifications } = useStore();
@@ -51,7 +52,7 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
   const runSync = async () => {
     const r = await syncNow();
     if (!r) return;
-    notify(r.errors.length ? `⚠️ ${r.errors[0]}` : `🔄 ${r.added} novas · ${r.updated} atualizadas`);
+    notify(r.errors.length ? `⚠️ ${r.errors[0]}` : `🔄 ${r.added} novas · ${r.updated} atualizadas${r.submitted ? ` · ${r.submitted} entregues` : ''}`);
   };
 
   const removeFeed = (id: string, name: string) => {
@@ -70,7 +71,7 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
   return (
     <ScrollView
       style={{ flex: 1 }}
-      contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 18, paddingBottom: 150 }}
+      contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 18, paddingBottom: 170 }}
       keyboardShouldPersistTaps="handled"
     >
       <Txt variant="label" tone="faint">Do seu jeito</Txt>
@@ -111,7 +112,7 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
       ))}
 
       <Card>
-        <Txt variant="subtitle">＋ Conectar um calendário</Txt>
+        <Txt variant="subtitle">{settings.feeds.length ? '＋ Conectar outro calendário' : '＋ Conectar um calendário'}</Txt>
         <Txt variant="small" tone="muted" style={{ marginTop: 4 }}>
           No Canvas (pelo navegador): Calendário → “Feed do calendário” (canto inferior direito) → copie o link e cole aqui. Também funciona com o endereço iCal secreto do Google Agenda.
         </Txt>
@@ -152,6 +153,11 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
           <Switch value={settings.autoSync} onValueChange={(v) => updateSettings({ autoSync: v })} trackColor={{ true: p.accent, false: p.border }} thumbColor={p.surface} />
         </Row>
       </Card>
+
+      <CanvasTokenCard notify={notify} />
+      <CoursesSection />
+      <StudySection />
+      <FocusSection onOpenFocus={onOpenFocus} />
 
       {/* ---------------- Notificações ---------------- */}
       <SectionLabel>Notificações</SectionLabel>
@@ -228,6 +234,8 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
         </View>
       </Card>
 
+      <BackupSection notify={notify} />
+
       {/* ---------------- Aparência ---------------- */}
       <SectionLabel>Aparência</SectionLabel>
       <Row style={{ flexWrap: 'wrap' }}>
@@ -237,7 +245,7 @@ export function SettingsScreen({ notify }: { notify(msg: string): void }) {
       </Row>
 
       <Txt variant="tiny" tone="faint" style={{ textAlign: 'center', marginTop: 28 }}>
-        Agenda Inteligente 1.0 · {tasks.length} tarefas salvas no celular
+        Agenda Inteligente 1.1 · {tasks.length} tarefas salvas no celular
       </Txt>
     </ScrollView>
   );

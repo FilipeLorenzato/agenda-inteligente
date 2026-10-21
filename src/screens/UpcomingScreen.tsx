@@ -1,32 +1,52 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CourseFilter } from '../components/CourseFilter';
 import { TaskCard } from '../components/TaskCard';
-import { Button, Card, Chip, Row, Txt } from '../components/ui';
-import { upcomingSections } from '../lib/logic';
+import { Button, Card, Chip, Row, Tap, Txt } from '../components/ui';
+import { matchesCourse, upcomingSections } from '../lib/logic';
 import { useStore } from '../state/store';
-import { useTheme } from '../theme';
+import { radius, useTheme } from '../theme';
 import type { Task } from '../types';
 
 type Filter = 'abertas' | 'andamento' | 'concluidas' | 'todas';
 
-export function UpcomingScreen({ onOpenTask }: { onOpenTask(task: Task): void }) {
+export function UpcomingScreen({ onOpenTask, notify }: { onOpenTask(task: Task): void; notify(msg: string): void }) {
   const p = useTheme();
   const insets = useSafeAreaInsets();
-  const { tasks, settings, cycleStatus, notificationsAllowed, askNotifications } = useStore();
+  const { tasks, settings, cycleStatus, notificationsAllowed, askNotifications, courseFilter, markOverdueDone } = useStore();
   const [filter, setFilter] = useState<Filter>('abertas');
 
   const sections = useMemo(() => {
-    const filtered = tasks.filter((t) =>
-      filter === 'abertas' ? t.status !== 'concluida' : filter === 'andamento' ? t.status === 'andamento' : filter === 'concluidas' ? t.status === 'concluida' : true,
+    const filtered = tasks.filter(
+      (t) =>
+        matchesCourse(t, courseFilter) &&
+        (filter === 'abertas' ? t.status !== 'concluida' : filter === 'andamento' ? t.status === 'andamento' : filter === 'concluidas' ? t.status === 'concluida' : true),
     );
     return upcomingSections(filtered);
-  }, [tasks, filter]);
+  }, [tasks, filter, courseFilter]);
 
   const total = sections.reduce((n, s) => n + s.tasks.length, 0);
 
+  const clearOverdue = (list: Task[]) => {
+    Alert.alert(
+      `Marcar ${list.length} ${list.length === 1 ? 'tarefa' : 'tarefas'} como concluída${list.length === 1 ? '' : 's'}?`,
+      'Use quando você já entregou essas atividades. Dá para desfazer tocando no selo ✅ de cada uma.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Marcar todas',
+          onPress: () => {
+            const n = markOverdueDone(list.map((t) => t.id));
+            notify(`✅ ${n} ${n === 1 ? 'tarefa concluída' : 'tarefas concluídas'}`);
+          },
+        },
+      ],
+    );
+  };
+
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 18, paddingBottom: 150 }}>
+    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: insets.top + 14, paddingHorizontal: 18, paddingBottom: 170 }}>
       <Txt variant="label" tone="faint">O que está chegando</Txt>
       <Txt variant="display" style={{ marginTop: 4 }}>Próximas 🔔</Txt>
 
@@ -40,7 +60,9 @@ export function UpcomingScreen({ onOpenTask }: { onOpenTask(task: Task): void })
         </Card>
       ) : null}
 
-      <Row style={{ flexWrap: 'wrap', marginTop: 16 }}>
+      <CourseFilter />
+
+      <Row style={{ flexWrap: 'wrap', marginTop: 8 }}>
         <Chip label="Abertas" emoji="⏳" selected={filter === 'abertas'} onPress={() => setFilter('abertas')} compact />
         <Chip label="Fazendo" emoji="🚧" selected={filter === 'andamento'} onPress={() => setFilter('andamento')} compact />
         <Chip label="Concluídas" emoji="✅" selected={filter === 'concluidas'} onPress={() => setFilter('concluidas')} compact />
@@ -64,10 +86,24 @@ export function UpcomingScreen({ onOpenTask }: { onOpenTask(task: Task): void })
               <Txt variant="subtitle" style={s.key === 'atrasadas' ? { color: p.urgent } : undefined}>
                 {s.title}
               </Txt>
-              <Txt variant="small" tone="faint">{s.tasks.length}</Txt>
+              {s.key === 'atrasadas' && s.tasks.some((t) => t.status !== 'concluida') ? (
+                <Tap onPress={() => clearOverdue(s.tasks.filter((t) => t.status !== 'concluida'))} style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.pill, backgroundColor: p.accentSoft }}>
+                  <Text style={{ color: p.accent, fontWeight: '800', fontSize: 12 }}>✅ Já fiz todas</Text>
+                </Tap>
+              ) : (
+                <Txt variant="small" tone="faint">{s.tasks.length}</Txt>
+              )}
             </Row>
             {s.tasks.map((t) => (
-              <TaskCard key={t.id} task={t} allDayTime={settings.allDayTime} showDate onPress={() => onOpenTask(t)} onCycleStatus={() => cycleStatus(t.id)} />
+              <TaskCard
+                key={t.id}
+                task={t}
+                allDayTime={settings.allDayTime}
+                courseStyles={settings.courseStyles}
+                showDate
+                onPress={() => onOpenTask(t)}
+                onCycleStatus={() => cycleStatus(t.id)}
+              />
             ))}
           </View>
         ))

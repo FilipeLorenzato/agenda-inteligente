@@ -88,7 +88,7 @@ export function parseIcs(text: string): IcsEvent[] {
 export function splitCanvasTitle(summary: string): { title: string; course?: string } {
   const m = /^(.*?)\s*\[([^\]]+)\]\s*$/.exec(summary);
   if (!m || !m[1].trim()) return { title: summary.trim() };
-  return { title: m[1].trim(), course: m[2].trim() };
+  return { title: m[1].trim(), course: cleanCourseName(m[2]) };
 }
 
 /** Aceita webcal:// e corrige espaços colados por engano */
@@ -105,4 +105,22 @@ export function cleanDescription(d?: string, max = 400): string | undefined {
   const t = d.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
   if (!t) return undefined;
   return t.length > max ? t.slice(0, max - 1).trimEnd() + '…' : t;
+}
+
+/** "(580100) Sistemas Operacionais - 2026/2" -> "Sistemas Operacionais" */
+export function cleanCourseName(course?: string): string | undefined {
+  if (!course) return course;
+  const c = course
+    .replace(/^\s*\(\s*[\w.-]+\s*\)\s*/, '')
+    .replace(/\s*[-–]\s*\d{4}\s*\/\s*\d\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return c || course.trim();
+}
+
+/** Extrai ids do Canvas do evento: curso e tarefa (assignment) */
+export function parseCanvasIds(uid: string, url?: string): { courseId?: string; assignmentId?: string } {
+  const a = /assignment[-_](?:override[-_]\d+[-_])?(\d+)/i.exec(uid) ?? (url ? /(?:#assignment_|\/assignments\/)(\d+)/.exec(url) : null);
+  const c = url ? /(?:include_contexts=course_|\/courses\/)(\d+)/.exec(url) : null;
+  return { courseId: c?.[1], assignmentId: a?.[1] };
 }

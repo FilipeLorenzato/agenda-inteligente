@@ -2,10 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Modal, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { capitalize, formatLongDate, formatOffset, fromKey, toKey, withTime } from '../lib/dates';
-import { CATEGORIES, PRIORITIES, REMINDER_PRESETS, STATUSES } from '../lib/meta';
+import { cleanCourseName } from '../lib/ical';
+import { describeRepeat, formatMinutes, newId } from '../lib/logic';
+import { CATEGORIES, courseStyle, PRIORITIES, REMINDER_PRESETS, STATUSES } from '../lib/meta';
+import { useStore } from '../state/store';
 import { pickDate, pickTime } from '../services/pickers';
 import { alpha, priorityColor, radius, useTheme } from '../theme';
-import type { TaskDraft } from '../types';
+import type { RepeatFreq, TaskDraft } from '../types';
 import { Button, Chip, Row, SectionLabel, Tap, Txt } from './ui';
 
 interface Props {
@@ -14,8 +17,17 @@ interface Props {
   isNew: boolean;
   onClose(): void;
   onSave(draft: TaskDraft): void;
-  onDelete?(): void;
+  onDelete?(scope: 'esta' | 'proximas'): void;
+  onFocus?(): void;
 }
+
+const WEEK_LETTERS = ['D', 'S', 'T', 'Q', 'Q', 'S', 'S'];
+const REPEAT_OPTIONS: { key: RepeatFreq | 'nao'; label: string; emoji: string }[] = [
+  { key: 'nao', label: 'Não repete', emoji: '➖' },
+  { key: 'diaria', label: 'Todo dia', emoji: '📆' },
+  { key: 'semanal', label: 'Semanal', emoji: '🔁' },
+  { key: 'mensal', label: 'Todo mês', emoji: '🗓️' },
+];
 
 const UNITS: { key: string; label: string; mult: number }[] = [
   { key: 'min', label: 'min', mult: 1 },
@@ -25,17 +37,20 @@ const UNITS: { key: string; label: string; mult: number }[] = [
 ];
 const ALARM_PRESETS = [0, 5, 15, 30, 60, 120];
 
-export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete }: Props) {
+export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete, onFocus }: Props) {
   const p = useTheme();
   const insets = useSafeAreaInsets();
   const [d, setD] = useState<TaskDraft | null>(initial);
   const [customOpen, setCustomOpen] = useState(false);
   const [customNum, setCustomNum] = useState('2');
   const [customUnit, setCustomUnit] = useState('h');
+  const [newSub, setNewSub] = useState('');
+  const { settings } = useStore();
 
   useEffect(() => {
     setD(initial);
     setCustomOpen(false);
+    setNewSub('');
   }, [initial, visible]);
 
   if (!d) return null;
@@ -56,6 +71,25 @@ export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete 
   };
   const customs = d.reminders.filter((m) => !REMINDER_PRESETS.includes(m));
 
+  const subs = d.subtasks ?? [];
+  const addSub = () => {
+    const t = newSub.trim();
+    if (!t) return;
+    set({ subtasks: [...subs, { id: newId(), title: t, done: false }] });
+    setNewSub('');
+  };
+  const setRepeat = (key: RepeatFreq | 'nao') => {
+    if (key === 'nao') return set({ repeat: undefined });
+    set({ repeat: key === 'semanal' ? { freq: 'semanal', days: d.repeat?.days?.length ? d.repeat.days : [day.getDay()] } : { freq: key } });
+  };
+  const toggleWeekday = (w: number) => {
+    const days = d.repeat?.days ?? [];
+    const next = days.includes(w) ? days.filter((x) => x !== w) : [...days, w].sort((a, b) => a - b);
+    if (next.length) set({ repeat: { freq: 'semanal', days: next } });
+  };
+  const course = cleanCourseName(d.course);
+  const cs = course ? courseStyle(course, settings.courseStyles) : null;
+
   const save = () => {
     const title = d.title.trim();
     if (!title) {
@@ -66,9 +100,24 @@ export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete 
   };
 
   const confirmDelete = () => {
-    Alert.alert('Excluir tarefa?', d.source === 'feed' ? 'Ela pode voltar na próxima sincronização do calendário.' : 'Essa ação não pode ser desfeita.', [
+    if (!onDelete) return;
+    if (d.seriesId) {
+      Alert.alert('Excluir tarefa que se repete', 'Quer excluir só esta ou também as próximas?', [
+        { text: 'Cancelar', style: 'cancel' },
+        { text: 'Só esta', onPress: () => onDelete('esta') },
+        { text: 'Esta e as próximas', style: 'destructive', onPress: () => onDelete('proximas') },
+      ]);
+      return;
+    }
+    const msg =
+      d.source === 'feed'
+        ? 'Ela volta na próxima sincronização do Canvas. Se já fez, prefira marcar como ✅ Concluída.'
+        : d.studyFor
+          ? 'O bloco de estudo desta prova não será criado de novo.'
+          : 'Essa ação não pode ser desfeita.';
+    Alert.alert('Excluir tarefa?', msg, [
       { text: 'Cancelar', style: 'cancel' },
-      { text: 'Excluir', style: 'destructive', onPress: onDelete },
+      { text: 'Excluir', style: 'destructive', onPress: () => onDelete('esta') },
     ]);
   };
 
@@ -238,6 +287,84 @@ export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete 
             ) : null}
           </View>
 
+          <SectionLabel right={subs.length ? <Txt variant="small" tone="muted">{subs.filter((x) => x.done).length}/{subs.length}</Txt> : undefined}>
+            Etapas
+          </SectionLabel>
+          <View style={[styles.subBox, { backgroundColor: p.surface, borderColor: p.border }]}>
+            {subs.map((sub, i) => (
+              <Row key={sub.id} style={[styles.subRow, i > 0 && { borderTopWidth: 1, borderTopColor: p.border }]}>
+                <Tap
+                  onPress={() => set({ subtasks: subs.map((x) => (x.id === sub.id ? { ...x, done: !x.done } : x)) })}
+                  style={[styles.check, { borderColor: sub.done ? p.done : p.textFaint, backgroundColor: sub.done ? p.done : 'transparent' }]}
+                  accessibilityLabel={sub.done ? 'Desmarcar etapa' : 'Marcar etapa'}
+                >
+                  {sub.done ? <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 13 }}>✓</Text> : null}
+                </Tap>
+                <TextInput
+                  value={sub.title}
+                  onChangeText={(title) => set({ subtasks: subs.map((x) => (x.id === sub.id ? { ...x, title } : x)) })}
+                  style={[styles.subInput, { color: sub.done ? p.textMuted : p.text, textDecorationLine: sub.done ? 'line-through' : 'none' }]}
+                />
+                <Tap onPress={() => set({ subtasks: subs.filter((x) => x.id !== sub.id) })} hitSlop={8} style={{ padding: 6 }}>
+                  <Text style={{ color: p.textFaint, fontSize: 14 }}>✕</Text>
+                </Tap>
+              </Row>
+            ))}
+            <Row style={[styles.subRow, subs.length > 0 && { borderTopWidth: 1, borderTopColor: p.border }]}>
+              <Text style={{ color: p.accent, fontSize: 18, fontWeight: '800', width: 24, textAlign: 'center', marginRight: 10 }}>＋</Text>
+              <TextInput
+                value={newSub}
+                onChangeText={setNewSub}
+                onSubmitEditing={addSub}
+                placeholder="Adicionar etapa (ex.: pesquisa, código, relatório)"
+                placeholderTextColor={p.textFaint}
+                returnKeyType="done"
+                blurOnSubmit={false}
+                style={[styles.subInput, { color: p.text }]}
+              />
+              {newSub.trim() ? (
+                <Tap onPress={addSub} style={[styles.subAdd, { backgroundColor: p.accent }]}>
+                  <Text style={{ color: p.onAccent, fontWeight: '800', fontSize: 12 }}>OK</Text>
+                </Tap>
+              ) : null}
+            </Row>
+          </View>
+
+          <SectionLabel>Repetir</SectionLabel>
+          <Row style={{ flexWrap: 'wrap' }}>
+            {REPEAT_OPTIONS.map((o) => (
+              <Chip
+                key={o.key}
+                emoji={o.emoji}
+                label={o.label}
+                compact
+                selected={(d.repeat?.freq ?? 'nao') === o.key}
+                onPress={() => setRepeat(o.key)}
+              />
+            ))}
+          </Row>
+          {d.repeat?.freq === 'semanal' ? (
+            <Row style={{ marginBottom: 6 }}>
+              {WEEK_LETTERS.map((l, w) => {
+                const on = d.repeat?.days?.includes(w);
+                return (
+                  <Tap
+                    key={w}
+                    onPress={() => toggleWeekday(w)}
+                    style={[styles.weekday, { backgroundColor: on ? p.accent : p.surface, borderColor: on ? p.accent : p.border }]}
+                  >
+                    <Text style={{ color: on ? p.onAccent : p.textMuted, fontWeight: '800' }}>{l}</Text>
+                  </Tap>
+                );
+              })}
+            </Row>
+          ) : null}
+          {d.repeat ? (
+            <Txt variant="small" tone="faint">
+              🔁 {describeRepeat(d.repeat)}. As próximas ocorrências aparecem na agenda com as mesmas configurações.
+            </Txt>
+          ) : null}
+
           <SectionLabel>Notas</SectionLabel>
           <TextInput
             value={d.notes ?? ''}
@@ -248,16 +375,36 @@ export function TaskEditor({ visible, initial, isNew, onClose, onSave, onDelete 
             style={[styles.notes, { color: p.text, backgroundColor: p.surface, borderColor: p.border }]}
           />
 
+          {cs && course && d.source !== 'feed' ? (
+            <View style={[styles.feedBox, { backgroundColor: alpha(cs.color, 0.12) }]}>
+              <Txt variant="small" style={{ color: cs.color }}>{cs.emoji} {course}</Txt>
+            </View>
+          ) : null}
+          {d.submitted ? (
+            <View style={[styles.feedBox, { backgroundColor: alpha(p.done, 0.14) }]}>
+              <Txt variant="small" style={{ color: p.done, fontWeight: '700' }}>📤 Entrega confirmada pelo Canvas</Txt>
+            </View>
+          ) : null}
           {d.source === 'feed' ? (
             <View style={[styles.feedBox, { backgroundColor: p.surfaceAlt }]}>
+              {cs && course ? <Txt variant="subtitle" style={{ color: cs.color, marginBottom: 4 }}>{cs.emoji} {course}</Txt> : null}
               <Txt variant="small" tone="muted">
-                🔗 Importada de {d.feedName ?? 'um calendário'}{d.course ? ` · ${d.course}` : ''}. Título e data são atualizados automaticamente; status, importância e lembretes ficam como você escolher.
+                🔗 Importada de {d.feedName ?? 'um calendário'}. Título e data são atualizados automaticamente; status, importância e lembretes ficam como você escolher.
               </Txt>
               {d.url ? <Button label="Abrir no Canvas" emoji="🎓" kind="soft" onPress={() => Linking.openURL(d.url as string)} style={{ marginTop: 10 }} /> : null}
             </View>
           ) : null}
 
-          {!isNew && onDelete ? <Button label="Excluir tarefa" emoji="🗑️" kind="danger" onPress={confirmDelete} style={{ marginTop: 26 }} /> : null}
+          {!isNew && onFocus && d.status !== 'concluida' ? (
+            <Button
+              label={d.focusMinutes ? `Focar nesta tarefa · ${formatMinutes(d.focusMinutes)} até agora` : 'Focar nesta tarefa (Pomodoro)'}
+              emoji="⏱️"
+              kind="soft"
+              onPress={onFocus}
+              style={{ marginTop: 22 }}
+            />
+          ) : null}
+          {!isNew && onDelete ? <Button label="Excluir tarefa" emoji="🗑️" kind="danger" onPress={confirmDelete} style={{ marginTop: 12 }} /> : null}
         </ScrollView>
       </View>
     </Modal>
@@ -278,4 +425,10 @@ const styles = StyleSheet.create({
   alarmBox: { borderWidth: 1.5, borderRadius: radius.lg, padding: 14 },
   notes: { minHeight: 90, borderWidth: 1, borderRadius: radius.md, padding: 14, fontSize: 15, textAlignVertical: 'top' },
   feedBox: { borderRadius: radius.md, padding: 14, marginTop: 18 },
+  subBox: { borderWidth: 1, borderRadius: radius.md, paddingHorizontal: 12 },
+  subRow: { paddingVertical: 8 },
+  check: { width: 24, height: 24, borderRadius: 7, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginRight: 10 },
+  subInput: { flex: 1, fontSize: 15, paddingVertical: 4 },
+  subAdd: { paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, marginLeft: 6 },
+  weekday: { width: 38, height: 38, borderRadius: 19, borderWidth: 1.5, alignItems: 'center', justifyContent: 'center', marginRight: 6 },
 });

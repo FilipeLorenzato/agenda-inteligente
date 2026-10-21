@@ -74,7 +74,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cp android/app/build/outputs/apk/release/app-release.apk AgendaInteligente.apk
-          TAG="v1.0.${{ github.run_number }}"
+          VER=$(node -p "require('./app.json').expo.version.split('.').slice(0,2).join('.')")
+          TAG="v${VER}.${{ github.run_number }}"
           gh release create "$TAG" AgendaInteligente.apk \
             --title "Agenda Inteligente $TAG" \
             --notes "Baixe o arquivo AgendaInteligente.apk pelo celular e toque nele para instalar." \

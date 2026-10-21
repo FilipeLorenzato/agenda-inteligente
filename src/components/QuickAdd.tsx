@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { capitalize, formatOffset, formatRelativeDay, fromKey, toKey, withTime } from '../lib/dates';
+import { describeRepeat } from '../lib/logic';
 import { PRIORITIES } from '../lib/meta';
 import { parseTask, ParsedTask } from '../lib/parser';
 import { pickDate, pickTime } from '../services/pickers';
@@ -24,7 +25,7 @@ type Phase = 'idle' | 'listening' | 'review';
 
 const EXAMPLES = [
   '“Prova de SO sexta às 14h, urgente, me lembra uma semana e um dia antes”',
-  '“Entregar TP de PAA dia 30 às 23:59”',
+  '“Academia toda segunda e quarta às 7h”',
   '“Dentista amanhã às 3 da tarde com alarme”',
 ];
 
@@ -54,6 +55,7 @@ export function QuickAdd({ visible, mode, defaultReminders, onClose, onAdd, onMo
       status: 'pendente',
       reminders: r.reminders ?? [...defaultReminders],
       alarm: r.alarm,
+      repeat: r.repeat ?? undefined,
       source: voice ? 'voz' : 'manual',
       notes: voice ? `🎙️ “${text}”` : undefined,
     }),
@@ -309,6 +311,7 @@ function Review({
             compact
             onPress={() => set({ alarm: draft.alarm === null ? 0 : null })}
           />
+          {draft.repeat ? <Chip emoji="🔁" label={describeRepeat(draft.repeat)} selected compact onPress={() => set({ repeat: undefined })} /> : null}
         </Row>
 
         <Row style={{ marginTop: 4 }}>

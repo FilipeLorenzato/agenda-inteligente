@@ -107,7 +107,13 @@ export function rescheduleAll(tasks: Task[], settings: Settings): Promise<number
   pending = null;
   running = (async () => {
     try {
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      // cancela os lembretes antigos, mas mantém o aviso do timer de foco
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      await Promise.all(
+        scheduled
+          .filter((n) => (n.content.data as { kind?: string } | undefined)?.kind !== 'foco')
+          .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+      );
       const plan = planAll(job.tasks, job.settings);
       for (const p of plan) {
         try {
@@ -149,4 +155,28 @@ export async function sendTestNotification(kind: 'lembrete' | 'alarme'): Promise
 export async function countScheduled(): Promise<number> {
   const all = await Notifications.getAllScheduledNotificationsAsync();
   return all.length;
+}
+
+/** Aviso de fim do foco/pausa do Pomodoro (funciona com o app em segundo plano) */
+export async function scheduleFocusEnd(at: Date, phase: 'foco' | 'pausa', taskTitle?: string): Promise<string | undefined> {
+  try {
+    return await Notifications.scheduleNotificationAsync({
+      content: {
+        title: phase === 'foco' ? '⏱️ Foco concluído!' : '☕ Fim da pausa',
+        body: phase === 'foco' ? `Hora de uma pausa${taskTitle ? ` · ${taskTitle}` : ''}` : `Bora voltar${taskTitle ? ` para ${taskTitle}` : ''} 💪`,
+        data: { kind: 'foco' },
+        sound: true,
+        priority: Notifications.AndroidNotificationPriority.HIGH,
+        color: ACCENT,
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: CHANNEL_REMINDERS },
+    });
+  } catch {
+    return undefined;
+  }
+}
+
+export async function cancelNotification(id?: string): Promise<void> {
+  if (!id) return;
+  await Notifications.cancelScheduledNotificationAsync(id).catch(() => undefined);
 }

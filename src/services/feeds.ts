@@ -35,7 +35,8 @@ export async function syncFeeds(tasks: Task[], settings: Settings, now: Date = n
   for (const feed of settings.feeds) {
     try {
       const events = await fetchFeed(feed);
-      const r = mergeFeedEvents(current, events, feed, settings, now);
+      // Na primeira sincronização de um calendário, o que já passou entra como concluído
+      const r = mergeFeedEvents(current, events, feed, settings, now, { markPastDone: !feed.lastSync });
       current = r.tasks;
       added += r.added;
       updated += r.updated;

@@ -2,7 +2,7 @@
   "expo": {
     "name": "Agenda Inteligente",
     "slug": "agenda-inteligente",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -22,7 +22,9 @@
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "android.permission.RECORD_AUDIO"
-      ]
+      ],
+      "allowBackup": true,
+      "versionCode": 2
     },
     "plugins": [
       [
@@ -30,7 +32,9 @@
         {
           "icon": "./assets/notification-icon.png",
           "color": "#6C4DF6",
-          "sounds": ["./assets/sounds/alarme.wav"]
+          "sounds": [
+            "./assets/sounds/alarme.wav"
+          ]
         }
       ],
       [
@@ -38,9 +42,31 @@
         {
           "microphonePermission": "A Agenda usa o microfone para você ditar tarefas.",
           "speechRecognitionPermission": "A Agenda transforma o que você fala em tarefas.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
         }
-      ]
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Agenda",
+              "label": "Agenda Inteligente",
+              "description": "Tarefas de hoje e próximas entregas",
+              "minWidth": "250dp",
+              "minHeight": "180dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 3,
+              "previewImage": "./assets/widget/preview.png",
+              "updatePeriodMillis": 1800000,
+              "resizeMode": "horizontal|vertical"
+            }
+          ]
+        }
+      ],
+      "./plugins/withAppShortcuts"
     ]
   }
 }

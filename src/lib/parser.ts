@@ -6,7 +6,7 @@
 //   -> título "Prova de sistemas operacionais", próxima sexta 14:00, 🔥 urgente,
 //      lembretes [1 semana, 1 dia], emoji 📝
 
-import type { Priority } from '../types';
+import type { Priority, Repeat } from '../types';
 import { addDays, addMonths, startOfDay, toKey, toTime } from './dates';
 import { guessCategory } from './meta';
 
@@ -22,6 +22,8 @@ export interface ParsedTask {
   alarm: number | null;
   /** Trechos entendidos, na ordem em que foram reconhecidos */
   matched: string[];
+  /** Repetição detectada ("toda segunda e quarta", "todo dia") */
+  repeat: Repeat | null;
 }
 
 // ---------- números por extenso ----------
@@ -167,6 +169,32 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
   take(/(?:\b(?:e|com|eh)\s+)?\b(?:importantes?|prioridade alta|alta prioridade|prioritari[oa])\b/, setPrio('alta'));
   take(/(?:\b(?:e|com|eh)\s+)?\b(?:prioridade baixa|baixa prioridade|sem pressa|sem urgencia|quando der|quando puder|nao urgente)\b/, setPrio('baixa'));
   take(/(?:\b(?:e|com|eh)\s+)?\b(?:prioridade (?:media|normal))\b/, setPrio('media'));
+
+  // ---------- repetição ----------
+  let repeat: Repeat | null = null;
+  const WD = '(segunda|terca|quarta|quinta|sexta|sabado|domingo)(?:[\\s-]feiras?)?s?';
+  take(new RegExp(`\\b(?:tod[ao]s?(?:\\s+as?)?|as)\\s+${WD}((?:\\s*(?:,|e)\\s*(?:a\\s+|as\\s+)?${WD})*)`), (m) => {
+    const names = m[0].match(/segunda|terca|quarta|quinta|sexta|sabado|domingo/g) ?? [];
+    if (!/^tod|^\s*tod/.test(m[0].trim()) && !/^as\s+\w+s\b/.test(m[0].trim())) return false;
+    const days = Array.from(new Set(names.map((n) => WEEKDAY_INDEX[n]))).sort((a, b) => a - b);
+    if (!days.length) return false;
+    repeat = { freq: 'semanal', days };
+  }, true);
+  if (!repeat) {
+    take(/\b(?:todos os dias|todo dia|diariamente|dia sim e outro tambem)\b/, () => {
+      repeat = { freq: 'diaria' };
+    }, true);
+  }
+  if (!repeat) {
+    take(/\b(?:toda semana|todas as semanas|semanalmente)\b/, () => {
+      repeat = { freq: 'semanal' };
+    }, true);
+  }
+  if (!repeat) {
+    take(/\b(?:todo mes|todos os meses|mensalmente)\b/, () => {
+      repeat = { freq: 'mensal' };
+    }, true);
+  }
 
   // ---------- datas explícitas ----------
   const makeDate = (day: number, month: number | null, year: number | null): Date | null => {
@@ -336,8 +364,21 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
 
   // ---------- data padrão ----------
   let finalDate: Date;
+  const rep = repeat as Repeat | null;
   if (date) finalDate = date;
-  else if (time) {
+  else if (rep && rep.freq === 'semanal' && rep.days?.length) {
+    // primeira ocorrência: o próximo dia da lista (hoje vale se o horário ainda não passou)
+    const todayOk = !time || time > toTime(now);
+    let found = today;
+    for (let i = 0; i < 8; i++) {
+      const d = addDays(today, i);
+      if (rep.days.includes(d.getDay()) && (i > 0 || todayOk)) {
+        found = d;
+        break;
+      }
+    }
+    finalDate = found;
+  } else if (time) {
     // só horário: hoje se ainda não passou, senão amanhã
     finalDate = time > toTime(now) ? today : addDays(today, 1);
   } else finalDate = today;
@@ -379,5 +420,6 @@ export function parseTask(input: string, now: Date = new Date()): ParsedTask {
     reminders: rem ? Array.from(new Set<number>(rem)).sort((a, b) => b - a) : null,
     alarm,
     matched,
+    repeat: rep ? (rep.freq === 'semanal' && !rep.days ? { freq: 'semanal', days: [finalDate.getDay()] } : rep) : null,
   };
 }

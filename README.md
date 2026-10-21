@@ -44,10 +44,22 @@ Puxa os prazos do Canvas da PUC Minas, cria tarefas por voz e te avisa no tempo 
 | ⏰ | **Alarme opcional** | Toca com som de alarme, mesmo no "Não perturbe" |
 | 🌙 | **Modo noturno** | Botão 🌙 no topo da tela, ou automático pelo sistema |
 | ☀️ | **Resumo do dia** | Toda manhã, uma notificação com as tarefas de hoje |
+| 🎨 | **Disciplinas com cor e emoji** | Cada matéria tem sua cor; filtre a agenda tocando nos chips do topo |
+| 📊 | **Visão da semana** | Barras mostram quais dias estão mais cheios |
+| ☑️ | **Etapas** | Divida uma tarefa em passos ("pesquisa → código → relatório") com barra de progresso |
+| 🔁 | **Tarefas que se repetem** | Todo dia, toda semana (escolha os dias) ou todo mês |
+| 📖 | **Blocos de estudo** | Para cada prova do Canvas, o app cria "Estudar para…" alguns dias antes |
+| ⏱️ | **Modo foco (Pomodoro)** | 25 min de foco + 5 de pausa, e o app soma quanto você estudou de cada matéria |
+| 📤 | **Entregas do Canvas** | Opcional: com um token, o app marca ✅ sozinho o que você já entregou |
+| 🧩 | **Widget** | Suas próximas tarefas na tela inicial, com botão de microfone |
+| 👆 | **Atalhos no ícone** | Segure o ícone do app: *Falar tarefa*, *Nova tarefa* ou *Próximas* |
+| 💾 | **Backup** | Exporte um arquivo para o Drive/WhatsApp e restaure em outro celular |
 
 Nas notificações aparecem os botões **✅ Concluir** e **😴 Adiar 10 min**.
 
 <img src="docs/preview-2.png" alt="Editor de tarefa, ajustes e tela de boas-vindas" width="100%">
+
+<img src="docs/preview-3.png" alt="Visão da semana, etapas e repetição, modo foco e widget" width="100%">
 
 ---
 
@@ -73,6 +85,87 @@ Para os avisos chegarem na hora certa:
 ### 4. Teste
 Em **Ajustes**, toque em **Testar lembrete** e **Testar alarme**. Eles chegam em 5 segundos.
 
+### 5. (Opcional) Coloque o widget
+Segure um espaço vazio da tela inicial → **Widgets** → **Agenda Inteligente** → arraste para a tela.
+
+---
+
+## 🧭 Como usar os recursos novos
+
+<details>
+<summary><b>🎨 Filtrar por disciplina e mudar cores</b></summary>
+
+- No topo da **Agenda** e das **Próximas** aparecem chips com suas disciplinas (ex.: 🐧 Sistemas Operacionais, 🧮 PAA). Toque em um para ver só as tarefas dela; toque em **Todas** para voltar.
+- Para trocar emoji ou cor: **Ajustes → Disciplinas** → toque na disciplina.
+- O app tira o código da disciplina do nome: "(580100) Sistemas Operacionais" vira "Sistemas Operacionais".
+</details>
+
+<details>
+<summary><b>📊 Ver a semana</b></summary>
+
+Na **Agenda**, toque em **📊 Semana**. Cada dia ganha uma barra: quanto mais alta, mais tarefas (e mais importantes). A cor é a da tarefa mais importante do dia. Use ‹ › para trocar de semana.
+</details>
+
+<details>
+<summary><b>☑️ Etapas de uma tarefa</b></summary>
+
+Abra a tarefa → **Etapas** → escreva e toque em **OK**. Marque cada etapa conforme for fazendo: o cartão mostra a barra de progresso, a tarefa vira 🚧 *Em andamento* sozinha e ✅ *Concluída* quando todas as etapas acabam.
+</details>
+
+<details>
+<summary><b>🔁 Tarefas que se repetem</b></summary>
+
+- Ao criar ou editar: **Repetir** → *Todo dia*, *Semanal* (escolha os dias) ou *Todo mês*.
+- Por voz: *"academia toda segunda e quarta às 7h"*, *"tomar remédio todo dia às 22h"*, *"pagar aluguel todo mês dia 5"*.
+- Ao editar ou excluir uma tarefa que se repete, o app pergunta: **só esta** ou **esta e as próximas**.
+</details>
+
+<details>
+<summary><b>📖 Blocos de estudo antes das provas</b></summary>
+
+Quando uma prova (📝) chega pelo Canvas, o app cria **"Estudar para Prova X"** alguns dias antes, com etapas *Revisar a matéria → Fazer exercícios → Anotar dúvidas*. Se a prova mudar de data, o bloco acompanha. Se você excluir um bloco, ele não volta. Ajuste em **Ajustes → Blocos de estudo** (1 a 7 dias antes, ou desligado).
+</details>
+
+<details>
+<summary><b>⏱️ Modo foco (Pomodoro)</b></summary>
+
+Abra uma tarefa → **Focar nesta tarefa**. São 25 min de foco e 5 de pausa (a cada 4 ciclos, uma pausa maior). O celular avisa quando o tempo acaba, mesmo com o app fechado, e uma pílula na tela mostra o tempo restante. Em **Ajustes → Foco e tempo de estudo** você vê quanto estudou na semana e em cada disciplina, e pode mudar para 50 + 10 ou 15 + 3.
+</details>
+
+<details>
+<summary><b>📤 Marcar sozinho o que já entreguei no Canvas (opcional)</b></summary>
+
+O link do calendário não diz se você entregou a atividade. Com um **token de acesso**, o app consegue conferir:
+
+1. No Canvas pelo navegador: **Conta → Configurações**.
+2. Em **Integrações aprovadas**, toque em **+ Novo token de acesso**, dê um nome (ex.: *Agenda*) e gere.
+3. Copie o token e cole em **Ajustes → Saber o que já entreguei**.
+
+A cada sincronização, o que você entregou vira ✅ com o selo **📤 Entregue**. O token fica guardado com segurança só no celular e nunca vai para o backup.
+> Se o Canvas não mostrar a opção de token, a PUC desativou esse recurso para alunos — o resto do app funciona normalmente.
+</details>
+
+<details>
+<summary><b>👆 Atalhos e widget</b></summary>
+
+- **Segure o ícone** do app para ver: 🎙️ *Falar tarefa*, ➕ *Nova tarefa*, 🔔 *Próximas*. Dá para arrastar um atalho para a tela inicial.
+- No **widget**, o botão 🎙️ abre direto o microfone, e tocar numa tarefa abre ela no app.
+</details>
+
+<details>
+<summary><b>💾 Backup e troca de celular</b></summary>
+
+- **Ajustes → Backup → Exportar**: gera um arquivo `agenda-backup-AAAA-MM-DD.json`. Salve no Google Drive, mande no WhatsApp ou por e-mail.
+- No celular novo: instale o app → **Ajustes → Backup → Restaurar** → escolha o arquivo → **Juntar** (mantém o que já existe) ou **Substituir tudo**.
+- O Android também guarda os dados do app no backup da conta Google, se ele estiver ativado no celular.
+</details>
+
+<details>
+<summary><b>✅ Muitas tarefas atrasadas?</b></summary>
+
+Ao conectar um calendário pela primeira vez, o que já passou entra como concluído. Se ainda sobrar algo, vá em **Próximas → ⚠️ Atrasadas → ✅ Já fiz todas**.
+</details>
+
 ---
 
 ## 🎙️ O que posso falar?
@@ -84,6 +177,7 @@ Fale naturalmente. Alguns exemplos:
 - *"Dentista amanhã às 3 da tarde com alarme"*
 - *"Academia às 7 e meia da manhã, alarme 30 minutos antes"*
 - *"Estudar para a prova hoje à noite, sem pressa"*
+- *"Academia toda segunda e quarta às 7h"*
 
 | O app entende | Exemplos |
 |---|---|
@@ -92,6 +186,7 @@ Fale naturalmente. Alguns exemplos:
 | **Importância** | urgente, importante, sem pressa |
 | **Lembretes** | "me lembra 1 semana antes e 1 dia antes", "avisa 2 horas antes", "na hora" |
 | **Alarme** | "com alarme", "alarme 30 minutos antes", "me acorda às 6h" |
+| **Repetição** | "todo dia", "toda segunda e quarta", "às terças", "toda semana", "todo mês" |
 
 Antes de salvar, o app mostra **"Entendi assim"** para você conferir e ajustar. Tudo é processado no celular, sem enviar seus dados para nenhuma IA.
 
@@ -119,6 +214,12 @@ Antes de salvar, o app mostra **"Entendi assim"** para você conferir e ajustar.
 <summary><b>O Canvas mostra "Link inválido ou expirado"</b></summary>
 
 Copie o link do **Feed do calendário** de novo no Canvas e conecte outra vez. Remova o antigo com o ícone 🗑️.
+</details>
+
+<details>
+<summary><b>O widget ou os atalhos não aparecem</b></summary>
+
+Eles chegam com a versão 1.1. Instale o APK novo por cima do antigo e, se o widget não aparecer na lista, reinicie o celular.
 </details>
 
 <details>
@@ -175,11 +276,14 @@ src/
 │   ├── parser.ts     entende frases em português (voz/texto)
 │   ├── ical.ts       lê o feed .ics do Canvas
 │   └── logic.ts      importação, lembretes e resumo diário
-├── services/         notificações, Canvas, voz, armazenamento
-├── components/       calendário, cartão, editor, adição rápida
-└── screens/          Agenda, Próximas, Ajustes
+│   └── backup.ts     formato do arquivo de backup
+├── services/         notificações, Canvas (feed e API), voz, backup, segundo plano
+├── components/       calendário, semana, cartão, editor, adição rápida, foco
+├── screens/          Agenda, Próximas, Ajustes
+└── widget/           widget da tela inicial
+plugins/              atalhos do ícone (Android App Shortcuts)
 tests/                testes (npm test)
 ```
 
-**Tecnologias:** React Native + Expo, expo-notifications (lembretes e alarmes exatos), expo-speech-recognition (voz em pt-BR no aparelho), expo-background-task (sincronização a cada ~6 h), AsyncStorage.
+**Tecnologias:** React Native + Expo, expo-notifications (lembretes e alarmes exatos), expo-speech-recognition (voz em pt-BR no aparelho), expo-background-task (sincronização a cada ~6 h), react-native-android-widget (widget), expo-secure-store (token do Canvas), expo-file-system + expo-sharing + expo-document-picker (backup), AsyncStorage.
 </details>

@@ -48,7 +48,8 @@ export interface Category {
 // A ordem importa: a primeira categoria que casar vence.
 export const CATEGORIES: Category[] = [
   { emoji: '🩺', label: 'Saúde', words: ['medico', 'medica', 'dentista', 'consulta', 'exame de sangue', 'remedio', 'vacina'] },
-  { emoji: '📝', label: 'Prova', words: ['prova', 'avaliacao', 'exame', 'teste', 'simulado', 'quiz'], priority: 'alta' },
+  { emoji: '📖', label: 'Estudo', words: ['estudar', 'revisar', 'revisao', 'ler', 'leitura', 'resumo'] },
+  { emoji: '📝', label: 'Prova', words: ['prova', 'avaliacao', 'reavaliacao', 'exame', 'teste', 'simulado', 'quiz', 'quizz'], priority: 'alta' },
   { emoji: '📚', label: 'Trabalho / entrega', words: ['trabalho', 'tp', 'tarefa', 'atividade', 'entrega', 'projeto', 'relatorio', 'lista', 'exercicio', 'artigo', 'apresentacao', 'seminario'] },
   { emoji: '🎓', label: 'Aula', words: ['aula', 'monitoria', 'palestra', 'laboratorio', 'orientacao'] },
   { emoji: '👥', label: 'Reunião', words: ['reuniao', 'call', 'meet', 'encontro', 'grupo'] },
@@ -80,3 +81,69 @@ export function guessCategory(text: string): Category {
 
 /** Opções rápidas de lembrete, em minutos antes do prazo */
 export const REMINDER_PRESETS = [10080, 4320, 1440, 180, 60, 30, 15, 0];
+
+export const STUDY_EMOJI = '📖';
+export const EXAM_EMOJI = '📝';
+
+// ------------------------------------------------------------------
+// Disciplinas: cor e emoji
+// ------------------------------------------------------------------
+
+// Sem vermelho/laranja puros para não confundir com a cor de importância (🔥 ⚡)
+export const COURSE_COLORS = ['#0EA5E9', '#D946EF', '#14B8A6', '#4F46E5', '#B45309', '#0891B2', '#65A30D', '#CA8A04', '#DB2777', '#64748B'];
+export const COURSE_EMOJIS = ['💻', '🧮', '🧠', '⚙️', '🗄️', '📐', '🔬', '🌐', '📊', '🧪', '🛰️', '🎨', '📘', '🔌'];
+
+const COURSE_GUESS: [string[], string][] = [
+  [['sistemas operacionais'], '🐧'],
+  [['arquitetura', 'computadores'], '🔌'],
+  [['algoritmo', 'complexidade'], '🧮'],
+  [['banco de dados', 'dados'], '🗄️'],
+  [['engenharia de software', 'software'], '🛠️'],
+  [['redes'], '🌐'],
+  [['inteligencia artificial', 'aprendizado', 'machine'], '🧠'],
+  [['interdisciplinar', 'projeto integrador'], '🤝'],
+  [['calculo', 'matematica', 'estatistica', 'probabilidade', 'algebra'], '📐'],
+  [['fisica', 'quimica'], '🔬'],
+  [['programacao', 'linguagem', 'compiladores'], '💻'],
+  [['coordenacao', 'espaco'], '🏫'],
+];
+
+function hash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/** Estilo padrão (determinístico) de uma disciplina, usado até o usuário escolher outro */
+export function defaultCourseStyle(course: string): { emoji: string; color: string } {
+  const t = stripAccents(course.toLowerCase());
+  const guess = COURSE_GUESS.find(([words]) => words.some((w) => t.includes(w)));
+  const h = hash(t);
+  return { emoji: guess ? guess[1] : COURSE_EMOJIS[h % COURSE_EMOJIS.length], color: COURSE_COLORS[h % COURSE_COLORS.length] };
+}
+
+export function courseStyle(course: string, styles: Record<string, { emoji: string; color: string }>): { emoji: string; color: string } {
+  return styles[course] ?? defaultCourseStyle(course);
+}
+
+/** Nome curto para chips: "Projeto e Análise de Algoritmos" -> "PAA", "Arquitetura de Computadores III" -> "Arq. Computadores III" */
+export function shortCourse(course: string): string {
+  if (course.length <= 22) return course;
+  const small = new Set(['de', 'da', 'do', 'das', 'dos', 'e', 'em', 'para', 'a', 'o']);
+  const main = course.split(/[:–-]/)[0].trim();
+  const words = main
+    .split(/\s+/)
+    .map((w) => w.replace(/[:;,.]+$/, ''))
+    .filter((w) => w && !small.has(w.toLowerCase()));
+  const roman = words.find((w) => /^(I|II|III|IV|V|VI|VII|VIII|IX|X|\d)$/.test(w));
+  const rest = words.filter((w) => w !== roman);
+  if (roman && rest.length >= 2) {
+    const abbr = `${rest[0].slice(0, rest[0].length > 6 ? 4 : rest[0].length)}${rest[0].length > 6 ? '.' : ''} ${rest[1]} ${roman}`;
+    if (abbr.length <= 24) return abbr;
+  }
+  if (rest.length >= 2) {
+    const acronym = rest.map((w) => w[0].toUpperCase()).join('') + (roman ? ` ${roman}` : '');
+    return acronym;
+  }
+  return course.slice(0, 21) + '…';
+}

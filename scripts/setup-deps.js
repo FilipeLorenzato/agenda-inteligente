@@ -19,9 +19,13 @@ const deps = [
   '@react-native-async-storage/async-storage',
   '@react-native-community/datetimepicker',
   'react-native-safe-area-context',
+  'expo-file-system',
+  'expo-sharing',
+  'expo-document-picker',
+  'expo-secure-store',
 ];
 // Bibliotecas fora do SDK: última versão publicada
-const extra = { 'expo-speech-recognition': 'latest' };
+const extra = { 'expo-speech-recognition': 'latest', 'react-native-android-widget': 'latest' };
 
 for (const name of deps) {
   if (!bundled[name]) throw new Error(`O Expo não informa versão para ${name}`);
