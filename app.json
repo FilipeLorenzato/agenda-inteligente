@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Agenda Inteligente",
+    "slug": "agenda-inteligente",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "agenda",
+    "backgroundColor": "#F6F3EE",
+    "android": {
+      "package": "com.filipelorenzato.agendainteligente",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#6C4DF6"
+      },
+      "softwareKeyboardLayoutMode": "resize",
+      "permissions": [
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#6C4DF6",
+          "sounds": ["./assets/sounds/alarme.wav"]
+        }
+      ],
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "A Agenda usa o microfone para você ditar tarefas.",
+          "speechRecognitionPermission": "A Agenda transforma o que você fala em tarefas.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,61 @@
+name: Gerar APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Instalar dependências
+        run: |
+          npm install --no-audit --no-fund
+          npm run setup
+
+      - name: Testes da lógica
+        run: npx --yes tsx --test tests/logica.test.ts
+
+      - name: Checagem de tipos
+        continue-on-error: true
+        run: npx tsc --noEmit
+
+      - name: Gerar projeto Android
+        run: npx expo prebuild --platform android --no-install
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compilar APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon -PreactNativeArchitectures=arm64-v8a,armeabi-v7a
+
+      - name: Publicar APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cp android/app/build/outputs/apk/release/app-release.apk AgendaInteligente.apk
+          TAG="v1.0.${{ github.run_number }}"
+          gh release create "$TAG" AgendaInteligente.apk \
+            --title "Agenda Inteligente $TAG" \
+            --notes "Baixe o arquivo AgendaInteligente.apk pelo celular e toque nele para instalar." \
+            --latest

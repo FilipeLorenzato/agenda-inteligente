@@ -1,0 +1,17 @@
+{
+  "name": "agenda-inteligente",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "setup": "expo install react react-native expo-status-bar expo-system-ui expo-notifications expo-background-task expo-task-manager expo-speech-recognition @react-native-async-storage/async-storage @react-native-community/datetimepicker react-native-safe-area-context && expo install typescript @types/react -- --save-dev",
+    "start": "expo start",
+    "android": "expo run:android",
+    "apk": "eas build --platform android --profile preview",
+    "test": "npx tsx --test tests/logica.test.ts",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "expo": "~57.0.0"
+  }
+}
