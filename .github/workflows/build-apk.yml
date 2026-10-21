@@ -49,8 +49,9 @@ jobs:
 
       - name: Instalar dependências
         run: |
+          "$RUNNER_TEMP/run.sh" "npm install (expo)" npm install --legacy-peer-deps --no-audit --no-fund
+          "$RUNNER_TEMP/run.sh" "fixar versoes" node scripts/setup-deps.js
           "$RUNNER_TEMP/run.sh" "npm install" npm install --no-audit --no-fund
-          "$RUNNER_TEMP/run.sh" "expo install" npm run setup
 
       - name: Testes da lógica
         run: '"$RUNNER_TEMP/run.sh" "testes" npx --yes tsx --test tests/logica.test.ts'

@@ -156,8 +156,7 @@ Também dá para rodar manualmente em *Actions → Gerar APK → Run workflow*.
 Precisa de Node.js 20.19+ e Android Studio.
 
 ```bash
-npm install
-npm run setup        # instala as bibliotecas nas versões do SDK
+npm run setup        # instala as bibliotecas nas versões certas do Expo
 npm test             # testes da lógica
 npm run android      # compila e abre no celular conectado por USB
 ```

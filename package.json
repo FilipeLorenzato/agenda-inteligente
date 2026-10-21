@@ -4,7 +4,7 @@
   "private": true,
   "main": "index.ts",
   "scripts": {
-    "setup": "expo install react react-native expo-status-bar expo-system-ui expo-notifications expo-background-task expo-task-manager expo-speech-recognition @react-native-async-storage/async-storage @react-native-community/datetimepicker react-native-safe-area-context && expo install typescript @types/react -- --save-dev",
+    "setup": "npm install --legacy-peer-deps --no-audit --no-fund && node scripts/setup-deps.js && npm install --no-audit --no-fund",
     "start": "expo start",
     "android": "expo run:android",
     "apk": "eas build --platform android --profile preview",
